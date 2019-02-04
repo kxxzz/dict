@@ -3,7 +3,19 @@
 
 
 
+typedef struct Pair
+{
+    u64 key;
+    u64 val;
+} Pair;
 
+
+typedef struct HashTable
+{
+    u32 capacity;
+    u32 count;
+    Pair* items;
+} HashTable;
 
 
 
