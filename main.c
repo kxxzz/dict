@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "hashtable.h"
+#include "table.h"
 
 
 
