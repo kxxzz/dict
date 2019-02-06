@@ -2,8 +2,18 @@
 
 
 
+typedef struct utbl_Cell
+{
+    u64 key;
+    u64 value;
+} utbl_Cell;
 
 
+typedef struct utbl_Table
+{
+    u32 length;
+    utbl_Cell* cells;
+} utbl_Table;
 
 
 
