@@ -58,6 +58,7 @@ UTBL* UTBL_new(u32 initSize)
 {
     UTBL* tbl = zalloc(sizeof(*tbl));
     vec_resize(&tbl->cellTable, initSize);
+    memset(tbl->cellTable.data, 0, initSize * sizeof(*tbl->cellTable.data));
     return tbl;
 }
 

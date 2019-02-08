@@ -32,7 +32,14 @@ void UTBL_free(UTBL* tbl);
 uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData);
 uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData);
 
-
+static uintptr_t* UTBL_getStr(UTBL* tbl, const char* keyData)
+{
+    return UTBL_get(tbl, (u32)strlen(keyData), keyData);
+}
+static uintptr_t* UTBL_addStr(UTBL* tbl, const char* keyData)
+{
+    return UTBL_add(tbl, (u32)strlen(keyData), keyData);
+}
 
 
 
