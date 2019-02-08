@@ -40,7 +40,6 @@ typedef struct UTBL_Key
 typedef struct UTBL_Cell
 {
     bool hasVal;
-    u32 hash;
     UTBL_Key key;
     uintptr_t val;
 } UTBL_Cell;
@@ -92,7 +91,6 @@ static uintptr_t* UTBL_addCell(UTBL* tbl, u32 si, u32 hash, u32 keySize, const v
     UTBL_Cell* cell = tbl->cellTable.data + si;
     assert(!cell->hasVal);
     cell->hasVal = true;
-    cell->hash = hash;
     cell->key.offset = offset;
     cell->key.size = keySize;
     return &cell->val;
