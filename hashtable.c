@@ -1,4 +1,4 @@
-#include "utbl.h"
+#include "hashtable.h"
 #include <assert.h>
 #include <vec.h>
 #include <xxhash.h>
@@ -30,39 +30,39 @@
 
 
 
-typedef struct UTBL_Key
+typedef struct HashTable_Key
 {
     u32 offset;
     u32 size;
-} UTBL_Key;
+} HashTable_Key;
 
 
-typedef struct UTBL_Cell
+typedef struct HashTable_Cell
 {
     bool hasVal;
-    UTBL_Key key;
+    HashTable_Key key;
     uintptr_t val;
-} UTBL_Cell;
+} HashTable_Cell;
 
-typedef vec_t(UTBL_Cell) UTBL_CellVec;
+typedef vec_t(HashTable_Cell) HashTable_CellVec;
 
 
 
-typedef struct UTBL
+typedef struct HashTable
 {
     vec_u8 keyDataBuf;
-    UTBL_CellVec cellTable;
-} UTBL;
+    HashTable_CellVec cellTable;
+} HashTable;
 
-UTBL* UTBL_new(u32 initSize)
+HashTable* newHashTable(u32 initSize)
 {
-    UTBL* tbl = zalloc(sizeof(*tbl));
+    HashTable* tbl = zalloc(sizeof(*tbl));
     vec_resize(&tbl->cellTable, initSize);
     memset(tbl->cellTable.data, 0, initSize * sizeof(*tbl->cellTable.data));
     return tbl;
 }
 
-void UTBL_free(UTBL* tbl)
+void hashTableFree(HashTable* tbl)
 {
     vec_free(&tbl->cellTable);
     vec_free(&tbl->keyDataBuf);
@@ -84,12 +84,12 @@ static u32 calc_hash(u32 keySize, const void* keyData)
 }
 
 
-static uintptr_t* UTBL_addCell(UTBL* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
+static uintptr_t* hashTableAddCell(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
     u32 offset = tbl->keyDataBuf.length;
     vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
     assert(si < tbl->cellTable.length);
-    UTBL_Cell* cell = tbl->cellTable.data + si;
+    HashTable_Cell* cell = tbl->cellTable.data + si;
     assert(!cell->hasVal);
     cell->hasVal = true;
     cell->key.offset = offset;
@@ -98,7 +98,7 @@ static uintptr_t* UTBL_addCell(UTBL* tbl, u32 si, u32 hash, u32 keySize, const v
 }
 
 
-static void UTBL_enlarge(UTBL* tbl)
+static void hashTableEnlarge(HashTable* tbl)
 {
     u32 l0 = tbl->cellTable.length;
     u32 l = !l0 ? 1 : l0 << 1;
@@ -112,7 +112,7 @@ static void UTBL_enlarge(UTBL* tbl)
 
 
 
-uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData)
+uintptr_t* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
@@ -138,7 +138,7 @@ uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData)
 
 
 
-uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData)
+uintptr_t* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
@@ -146,11 +146,11 @@ uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData)
         u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
-            return UTBL_addCell(tbl, si, hash, keySize, keyData);
+            return hashTableAddCell(tbl, si, hash, keySize, keyData);
         }
         if (tbl->cellTable.data[si].key.size != keySize)
         {
-            return UTBL_addCell(tbl, si, hash, keySize, keyData);
+            return hashTableAddCell(tbl, si, hash, keySize, keyData);
         }
         const void* keyData0 = tbl->keyDataBuf.data + tbl->cellTable.data[si].key.offset;
         if (0 == memcmp(keyData0, keyData, keySize))
@@ -158,17 +158,17 @@ uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData)
             return &tbl->cellTable.data[si].val;
         }
     }
-    UTBL_enlarge(tbl);
+    hashTableEnlarge(tbl);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
     {
         u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
-            return UTBL_addCell(tbl, si, hash, keySize, keyData);
+            return hashTableAddCell(tbl, si, hash, keySize, keyData);
         }
         if (tbl->cellTable.data[si].key.size != keySize)
         {
-            return UTBL_addCell(tbl, si, hash, keySize, keyData);
+            return hashTableAddCell(tbl, si, hash, keySize, keyData);
         }
     }
     assert(false);
