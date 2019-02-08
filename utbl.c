@@ -1,18 +1,30 @@
 #include "utbl.h"
+#include <vec.h>
 
+
+
+
+typedef struct utbl_Key
+{
+    u32 off;
+    u32 len;
+} utbl_Key;
 
 
 typedef struct utbl_Cell
 {
-    u64 key;
-    u64 value;
+    utbl_Key key;
+    uintptr_t val;
 } utbl_Cell;
+
+typedef vec_t(utbl_Cell) utbl_CellVec;
+
 
 
 typedef struct utbl_Table
 {
-    u32 length;
-    utbl_Cell* cells;
+    vec_u8 keyDataBuf;
+    utbl_CellVec cells;
 } utbl_Table;
 
 
