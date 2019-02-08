@@ -24,15 +24,13 @@ typedef double f64;
 
 
 
+typedef struct UTBL UTBL;
 
+UTBL* UTBL_new(u32 initSize);
+void UTBL_free(UTBL* tbl);
 
-
-
-
-
-
-
-
+uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData);
+uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData);
 
 
 
