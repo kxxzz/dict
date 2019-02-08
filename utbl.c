@@ -4,28 +4,29 @@
 
 
 
-typedef struct utbl_Key
+typedef struct UTBL_Key
 {
     u32 off;
     u32 len;
-} utbl_Key;
+} UTBL_Key;
 
 
-typedef struct utbl_Cell
+typedef struct UTBL_Cell
 {
-    utbl_Key key;
+    bool hasVal;
+    UTBL_Key key;
     uintptr_t val;
-} utbl_Cell;
+} UTBL_Cell;
 
-typedef vec_t(utbl_Cell) utbl_CellVec;
+typedef vec_t(UTBL_Cell) UTBL_CellVec;
 
 
 
-typedef struct utbl_Table
+typedef struct UTBL
 {
     vec_u8 keyDataBuf;
-    utbl_CellVec cells;
-} utbl_Table;
+    UTBL_CellVec cellTable;
+} UTBL;
 
 
 
