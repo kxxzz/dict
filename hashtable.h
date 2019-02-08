@@ -29,14 +29,14 @@ typedef struct HashTable HashTable;
 HashTable* newHashTable(u32 initSize);
 void hashTableFree(HashTable* tbl);
 
-uintptr_t* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData);
-uintptr_t* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData);
+u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData);
+u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData);
 
-static uintptr_t* hashTableGetStr(HashTable* tbl, const char* keyData)
+static u64* hashTableGetStr(HashTable* tbl, const char* keyData)
 {
     return hashTableGet(tbl, (u32)strlen(keyData), keyData);
 }
-static uintptr_t* hashTableAddStr(HashTable* tbl, const char* keyData)
+static u64* hashTableAddStr(HashTable* tbl, const char* keyData)
 {
     return hashTableAdd(tbl, (u32)strlen(keyData), keyData);
 }

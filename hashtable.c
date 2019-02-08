@@ -41,7 +41,7 @@ typedef struct HashTable_Cell
 {
     bool hasVal;
     HashTable_Key key;
-    uintptr_t val;
+    u64 val;
 } HashTable_Cell;
 
 typedef vec_t(HashTable_Cell) HashTable_CellVec;
@@ -84,7 +84,7 @@ static u32 calc_hash(u32 keySize, const void* keyData)
 }
 
 
-static uintptr_t* hashTableAddCell(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
+static u64* hashTableAddCell(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
     u32 offset = tbl->keyDataBuf.length;
     vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
@@ -112,7 +112,7 @@ static void hashTableEnlarge(HashTable* tbl)
 
 
 
-uintptr_t* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
+u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
@@ -138,7 +138,7 @@ uintptr_t* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 
 
 
-uintptr_t* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
+u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
