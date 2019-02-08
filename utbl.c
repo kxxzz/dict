@@ -83,7 +83,6 @@ static u32 calc_hash(u32 keySize, const void* keyData)
 }
 
 
-
 static uintptr_t* UTBL_addTo(UTBL* tbl, u32 si, u32 keySize, const void* keyData)
 {
     u32 offset = tbl->keyDataBuf.length;
@@ -98,7 +97,13 @@ static uintptr_t* UTBL_addTo(UTBL* tbl, u32 si, u32 keySize, const void* keyData
 }
 
 
-
+static void UTBL_enlarge(UTBL* tbl)
+{
+    u32 l0 = tbl->cellTable.length;
+    u32 l = !l0 ? 1 : l0 << 1;
+    vec_resize(&tbl->cellTable, l);
+    memset(tbl->cellTable.data + l0, 0, (l - l0) * sizeof(*tbl->cellTable.data));
+}
 
 
 
@@ -130,11 +135,11 @@ uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData)
 }
 
 
+
+
 uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData)
 {
-    u32 hi;
-doAdd:
-    hi = calc_hash(keySize, keyData);
+    u32 hi = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
     {
         u32 si = (hi + i) % tbl->cellTable.length;
@@ -152,7 +157,21 @@ doAdd:
             return &tbl->cellTable.data[si].val;
         }
     }
-    goto doAdd;
+    UTBL_enlarge(tbl);
+    for (u32 i = 0; i < tbl->cellTable.length; ++i)
+    {
+        u32 si = (hi + i) % tbl->cellTable.length;
+        if (!tbl->cellTable.data[si].hasVal)
+        {
+            return UTBL_addTo(tbl, si, keySize, keyData);
+        }
+        if (tbl->cellTable.data[si].key.size != keySize)
+        {
+            return UTBL_addTo(tbl, si, keySize, keyData);
+        }
+    }
+    assert(false);
+    return NULL;
 }
 
 
