@@ -40,6 +40,7 @@ typedef struct UTBL_Key
 typedef struct UTBL_Cell
 {
     bool hasVal;
+    u32 hash;
     UTBL_Key key;
     uintptr_t val;
 } UTBL_Cell;
@@ -83,7 +84,7 @@ static u32 calc_hash(u32 keySize, const void* keyData)
 }
 
 
-static uintptr_t* UTBL_addTo(UTBL* tbl, u32 si, u32 keySize, const void* keyData)
+static uintptr_t* UTBL_addCell(UTBL* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
     u32 offset = tbl->keyDataBuf.length;
     vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
@@ -91,6 +92,7 @@ static uintptr_t* UTBL_addTo(UTBL* tbl, u32 si, u32 keySize, const void* keyData
     UTBL_Cell* cell = tbl->cellTable.data + si;
     assert(!cell->hasVal);
     cell->hasVal = true;
+    cell->hash = hash;
     cell->key.offset = offset;
     cell->key.size = keySize;
     return &cell->val;
@@ -113,10 +115,10 @@ static void UTBL_enlarge(UTBL* tbl)
 
 uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData)
 {
-    u32 hi = calc_hash(keySize, keyData);
+    u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
     {
-        u32 si = (hi + i) % tbl->cellTable.length;
+        u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
             continue;
@@ -139,17 +141,17 @@ uintptr_t* UTBL_get(UTBL* tbl, u32 keySize, const void* keyData)
 
 uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData)
 {
-    u32 hi = calc_hash(keySize, keyData);
+    u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
     {
-        u32 si = (hi + i) % tbl->cellTable.length;
+        u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
-            return UTBL_addTo(tbl, si, keySize, keyData);
+            return UTBL_addCell(tbl, si, hash, keySize, keyData);
         }
         if (tbl->cellTable.data[si].key.size != keySize)
         {
-            return UTBL_addTo(tbl, si, keySize, keyData);
+            return UTBL_addCell(tbl, si, hash, keySize, keyData);
         }
         const void* keyData0 = tbl->keyDataBuf.data + tbl->cellTable.data[si].key.offset;
         if (0 == memcmp(keyData0, keyData, keySize))
@@ -160,14 +162,14 @@ uintptr_t* UTBL_add(UTBL* tbl, u32 keySize, const void* keyData)
     UTBL_enlarge(tbl);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
     {
-        u32 si = (hi + i) % tbl->cellTable.length;
+        u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
-            return UTBL_addTo(tbl, si, keySize, keyData);
+            return UTBL_addCell(tbl, si, hash, keySize, keyData);
         }
         if (tbl->cellTable.data[si].key.size != keySize)
         {
-            return UTBL_addTo(tbl, si, keySize, keyData);
+            return UTBL_addCell(tbl, si, hash, keySize, keyData);
         }
     }
     assert(false);
