@@ -51,6 +51,7 @@ typedef vec_t(HashTable_Slot) HashTable_SlotVec;
 typedef struct HashTable
 {
     vec_u8 keyDataBuf;
+    u32 numSlotsUsed;
     HashTable_SlotVec slotTable;
 } HashTable;
 
@@ -86,6 +87,7 @@ static u32 calcHash(u32 keySize, const void* keyData)
 
 static u64* hashTableOccupySlot(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
+    ++tbl->numSlotsUsed;
     u32 offset = tbl->keyDataBuf.length;
     vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
     assert(si < tbl->slotTable.length);
@@ -161,6 +163,10 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 
 u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
 {
+    if (tbl->numSlotsUsed > tbl->slotTable.length*0.75f)
+    {
+        hashTableEnlarge(tbl);
+    }
     u32 hash = calcHash(keySize, keyData);
     for (u32 i = 0; i < tbl->slotTable.length / 2; ++i)
     {
