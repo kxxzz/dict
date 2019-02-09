@@ -37,34 +37,34 @@ typedef struct HashTable_Key
 } HashTable_Key;
 
 
-typedef struct HashTable_Cell
+typedef struct HashTable_Slot
 {
-    bool hasVal;
+    bool occupied;
     HashTable_Key key;
     u64 val;
-} HashTable_Cell;
+} HashTable_Slot;
 
-typedef vec_t(HashTable_Cell) HashTable_CellVec;
+typedef vec_t(HashTable_Slot) HashTable_SlotVec;
 
 
 
 typedef struct HashTable
 {
     vec_u8 keyDataBuf;
-    HashTable_CellVec cellTable;
+    HashTable_SlotVec slotTable;
 } HashTable;
 
 HashTable* newHashTable(u32 initSize)
 {
     HashTable* tbl = zalloc(sizeof(*tbl));
-    vec_resize(&tbl->cellTable, initSize);
-    memset(tbl->cellTable.data, 0, initSize * sizeof(*tbl->cellTable.data));
+    vec_resize(&tbl->slotTable, initSize);
+    memset(tbl->slotTable.data, 0, initSize * sizeof(*tbl->slotTable.data));
     return tbl;
 }
 
 void hashTableFree(HashTable* tbl)
 {
-    vec_free(&tbl->cellTable);
+    vec_free(&tbl->slotTable);
     vec_free(&tbl->keyDataBuf);
     free(tbl);
 }
@@ -76,7 +76,7 @@ void hashTableFree(HashTable* tbl)
 
 
 
-static u32 calc_hash(u32 keySize, const void* keyData)
+static u32 calcHash(u32 keySize, const void* keyData)
 {
     u32 seed = 0;
     u32 hash = XXH32(keyData, keySize, seed);
@@ -84,26 +84,26 @@ static u32 calc_hash(u32 keySize, const void* keyData)
 }
 
 
-static u64* hashTableAddCell(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
+static u64* hashTableOccupySlot(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
     u32 offset = tbl->keyDataBuf.length;
     vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
-    assert(si < tbl->cellTable.length);
-    HashTable_Cell* cell = tbl->cellTable.data + si;
-    assert(!cell->hasVal);
-    cell->hasVal = true;
-    cell->key.offset = offset;
-    cell->key.size = keySize;
-    return &cell->val;
+    assert(si < tbl->slotTable.length);
+    HashTable_Slot* slot = tbl->slotTable.data + si;
+    assert(!slot->occupied);
+    slot->occupied = true;
+    slot->key.offset = offset;
+    slot->key.size = keySize;
+    return &slot->val;
 }
 
 
 static void hashTableEnlarge(HashTable* tbl)
 {
-    u32 l0 = tbl->cellTable.length;
+    u32 l0 = tbl->slotTable.length;
     u32 l = !l0 ? 1 : l0 << 1;
-    vec_resize(&tbl->cellTable, l);
-    memset(tbl->cellTable.data + l0, 0, (l - l0) * sizeof(*tbl->cellTable.data));
+    vec_resize(&tbl->slotTable, l);
+    memset(tbl->slotTable.data + l0, 0, (l - l0) * sizeof(*tbl->slotTable.data));
 }
 
 
@@ -114,22 +114,22 @@ static void hashTableEnlarge(HashTable* tbl)
 
 u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
-    u32 hash = calc_hash(keySize, keyData);
-    for (u32 i = 0; i < tbl->cellTable.length; ++i)
+    u32 hash = calcHash(keySize, keyData);
+    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
-        u32 si = (hash + i) % tbl->cellTable.length;
-        if (!tbl->cellTable.data[si].hasVal)
+        u32 si = (hash + i) % tbl->slotTable.length;
+        if (!tbl->slotTable.data[si].occupied)
         {
             continue;
         }
-        if (tbl->cellTable.data[si].key.size != keySize)
+        if (tbl->slotTable.data[si].key.size != keySize)
         {
             continue;
         }
-        const void* keyData0 = tbl->keyDataBuf.data + tbl->cellTable.data[si].key.offset;
+        const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
         if (0 == memcmp(keyData0, keyData, keySize))
         {
-            return &tbl->cellTable.data[si].val;
+            return &tbl->slotTable.data[si].val;
         }
     }
     return NULL;
@@ -140,35 +140,35 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 
 u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
 {
-    u32 hash = calc_hash(keySize, keyData);
-    for (u32 i = 0; i < tbl->cellTable.length; ++i)
+    u32 hash = calcHash(keySize, keyData);
+    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
-        u32 si = (hash + i) % tbl->cellTable.length;
-        if (!tbl->cellTable.data[si].hasVal)
+        u32 si = (hash + i) % tbl->slotTable.length;
+        if (!tbl->slotTable.data[si].occupied)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
         }
-        if (tbl->cellTable.data[si].key.size != keySize)
+        if (tbl->slotTable.data[si].key.size != keySize)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
         }
-        const void* keyData0 = tbl->keyDataBuf.data + tbl->cellTable.data[si].key.offset;
+        const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
         if (0 == memcmp(keyData0, keyData, keySize))
         {
-            return &tbl->cellTable.data[si].val;
+            return &tbl->slotTable.data[si].val;
         }
     }
     hashTableEnlarge(tbl);
-    for (u32 i = 0; i < tbl->cellTable.length; ++i)
+    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
-        u32 si = (hash + i) % tbl->cellTable.length;
-        if (!tbl->cellTable.data[si].hasVal)
+        u32 si = (hash + i) % tbl->slotTable.length;
+        if (!tbl->slotTable.data[si].occupied)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
         }
-        if (tbl->cellTable.data[si].key.size != keySize)
+        if (tbl->slotTable.data[si].key.size != keySize)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
         }
     }
     assert(false);
