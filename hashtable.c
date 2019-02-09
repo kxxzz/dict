@@ -29,6 +29,14 @@
 
 
 
+enum
+{
+    HashTable_Seed_Hash = 0,
+    HashTable_Seed_Hash1 = 1,
+};
+
+
+
 
 typedef struct HashTable_Key
 {
@@ -75,9 +83,7 @@ void hashTableFree(HashTable* tbl)
 
 
 
-
-
-static u32 calcHash(u32 keySize, const void* keyData, u32 seed)
+static u32 calcHashX(u32 keySize, const void* keyData, u32 seed)
 {
     u32 hash = XXH32(keyData, keySize, seed);
     return hash;
@@ -85,13 +91,15 @@ static u32 calcHash(u32 keySize, const void* keyData, u32 seed)
 
 
 
-static u32 calcHash0(u32 keySize, const void* keyData)
+
+
+static u32 calcHash(u32 keySize, const void* keyData)
 {
-    return calcHash(keySize, keyData, 0);
+    return calcHashX(keySize, keyData, HashTable_Seed_Hash);
 }
 static u32 calcHash1(u32 keySize, const void* keyData)
 {
-    return calcHash(keySize, keyData, 1);
+    return calcHashX(keySize, keyData, HashTable_Seed_Hash1);
 }
 
 
@@ -147,7 +155,7 @@ static void hashTableEnlarge(HashTable* tbl)
         }
         u32 keySize = slot->key.size;
         const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
-        u32 hash = calcHash0(keySize, keyData);
+        u32 hash = calcHash(keySize, keyData);
         u32 step = hashTableCalcStep(tbl, keySize, keyData);
         u64 v = slot->val;
         {
@@ -179,7 +187,7 @@ static void hashTableEnlarge(HashTable* tbl)
 
 u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
-    u32 hash = calcHash0(keySize, keyData);
+    u32 hash = calcHash(keySize, keyData);
     u32 step = hashTableCalcStep(tbl, keySize, keyData);
     u32 si = hash % tbl->slotTable.length;
     for (;;)
@@ -212,7 +220,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
     {
         hashTableEnlarge(tbl);
     }
-    u32 hash = calcHash0(keySize, keyData);
+    u32 hash = calcHash(keySize, keyData);
     u32 step = hashTableCalcStep(tbl, keySize, keyData);
     {
         u32 si = hash % tbl->slotTable.length;
