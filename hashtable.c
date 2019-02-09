@@ -162,7 +162,7 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calcHash(keySize, keyData);
-    for (u32 i = 0; i < tbl->slotTable.length; ++i)
+    for (u32 i = 0; i < tbl->slotTable.length / 2; ++i)
     {
         u32 si = (hash + i) % tbl->slotTable.length;
         if (!tbl->slotTable.data[si].occupied)
@@ -180,8 +180,9 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         }
         return &tbl->slotTable.data[si].val;
     }
+enlarge:
     hashTableEnlarge(tbl);
-    for (u32 i = 0; i < tbl->slotTable.length; ++i)
+    for (u32 i = 0; i < tbl->slotTable.length / 2; ++i)
     {
         u32 si = (hash + i) % tbl->slotTable.length;
         if (!tbl->slotTable.data[si].occupied)
@@ -193,8 +194,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
             continue;
         }
     }
-    assert(false);
-    return NULL;
+    goto enlarge;
 }
 
 
