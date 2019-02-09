@@ -84,6 +84,14 @@ static u32 calcHash(u32 keySize, const void* keyData)
     return hash;
 }
 
+static u32 calcHash1(u32 keySize, const void* keyData)
+{
+    u32 seed = 1;
+    u32 hash = XXH32(keyData, keySize, seed);
+    return hash;
+}
+
+
 
 static u64* hashTableOccupySlot(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
@@ -110,10 +118,15 @@ static void hashTableEnlarge(HashTable* tbl)
     memset(tbl->slotTable.data, 0, l1 * sizeof(*tbl->slotTable.data));
     for (u32 i = 0; i < slotTable0.length; ++i)
     {
-        u32 keySize = slotTable0.data[i].key.size;
-        const void* keyData = tbl->keyDataBuf.data + slotTable0.data[i].key.offset;
+        HashTable_Slot* slot = slotTable0.data + i;
+        if (!slot->occupied)
+        {
+            continue;
+        }
+        u32 keySize = slot->key.size;
+        const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
         u32 hash = calcHash(keySize, keyData);
-        u64 v = slotTable0.data[i].val;
+        u64 v = slot->val;
 
         for (u32 i = 0; i < tbl->slotTable.length; ++i)
         {
@@ -168,7 +181,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         hashTableEnlarge(tbl);
     }
     u32 hash = calcHash(keySize, keyData);
-    for (u32 i = 0; i < tbl->slotTable.length / 2; ++i)
+    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
         u32 si = (hash + i) % tbl->slotTable.length;
         if (!tbl->slotTable.data[si].occupied)
@@ -188,7 +201,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
     }
 enlarge:
     hashTableEnlarge(tbl);
-    for (u32 i = 0; i < tbl->slotTable.length / 2; ++i)
+    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
         u32 si = (hash + i) % tbl->slotTable.length;
         if (!tbl->slotTable.data[si].occupied)
