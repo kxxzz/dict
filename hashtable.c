@@ -127,14 +127,21 @@ static void hashTableEnlarge(HashTable* tbl)
         const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
         u32 hash = calcHash(keySize, keyData);
         u64 v = slot->val;
-
-        for (u32 i = 0; i < tbl->slotTable.length; ++i)
         {
-            u32 si = (hash + i) % tbl->slotTable.length;
-            if (!tbl->slotTable.data[si].occupied)
+            u32 si = hash % tbl->slotTable.length;
+            u32 s0 = si;
+            for (;;)
             {
-                *hashTableOccupySlot(tbl, si, hash, keySize, keyData) = v;
-                break;
+                if (!tbl->slotTable.data[si].occupied)
+                {
+                    *hashTableOccupySlot(tbl, si, hash, keySize, keyData) = v;
+                    break;
+                }
+                si = (si + 1) % tbl->slotTable.length;
+                if (si == s0)
+                {
+                    assert(false);
+                }
             }
         }
     }
@@ -150,23 +157,30 @@ static void hashTableEnlarge(HashTable* tbl)
 u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calcHash(keySize, keyData);
-    for (u32 i = 0; i < tbl->slotTable.length; ++i)
+    u32 si = hash % tbl->slotTable.length;
+    u32 s0 = si;
+    for (;;)
     {
-        u32 si = (hash + i) % tbl->slotTable.length;
         if (!tbl->slotTable.data[si].occupied)
         {
-            continue;
+            goto next;
         }
         if (tbl->slotTable.data[si].key.size != keySize)
         {
-            continue;
+            goto next;
         }
         const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
         if (memcmp(keyData0, keyData, keySize) != 0)
         {
-            continue;
+            goto next;
         }
         return &tbl->slotTable.data[si].val;
+    next:
+        si = (si + 1) % tbl->slotTable.length;
+        if (si == s0)
+        {
+            break;
+        }
     }
     return NULL;
 }
@@ -181,36 +195,49 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         hashTableEnlarge(tbl);
     }
     u32 hash = calcHash(keySize, keyData);
-    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
-        u32 si = (hash + i) % tbl->slotTable.length;
-        if (!tbl->slotTable.data[si].occupied)
+        u32 si = hash % tbl->slotTable.length;
+        u32 s0 = si;
+        for (;;)
         {
-            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
+            if (!tbl->slotTable.data[si].occupied)
+            {
+                return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
+            }
+            if (tbl->slotTable.data[si].key.size != keySize)
+            {
+                goto next;
+            }
+            const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
+            if (memcmp(keyData0, keyData, keySize) != 0)
+            {
+                goto next;
+            }
+            return &tbl->slotTable.data[si].val;
+        next:
+            si = (si + 1) % tbl->slotTable.length;
+            if (si == s0)
+            {
+                break;
+            }
         }
-        if (tbl->slotTable.data[si].key.size != keySize)
-        {
-            continue;
-        }
-        const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
-        if (memcmp(keyData0, keyData, keySize) != 0)
-        {
-            continue;
-        }
-        return &tbl->slotTable.data[si].val;
     }
 enlarge:
     hashTableEnlarge(tbl);
-    for (u32 i = 0; i < tbl->slotTable.length; ++i)
     {
-        u32 si = (hash + i) % tbl->slotTable.length;
-        if (!tbl->slotTable.data[si].occupied)
+        u32 si = hash % tbl->slotTable.length;
+        u32 s0 = si;
+        for (;;)
         {
-            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
-        }
-        if (tbl->slotTable.data[si].key.size != keySize)
-        {
-            continue;
+            if (!tbl->slotTable.data[si].occupied)
+            {
+                return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
+            }
+            si = (si + 1) % tbl->slotTable.length;
+            if (si == s0)
+            {
+                break;
+            }
         }
     }
     goto enlarge;
