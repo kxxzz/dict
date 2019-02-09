@@ -24,21 +24,21 @@ typedef double f64;
 
 
 
-typedef struct hashtbl_t hashtbl_t;
+typedef struct HashTable HashTable;
 
-hashtbl_t* hashtbl_new(u32 initSize);
-void hashtbl_free(hashtbl_t* tbl);
+HashTable* newHashTable(u32 initSize);
+void hashTableFree(HashTable* tbl);
 
-u64* hashtbl_get(hashtbl_t* tbl, u32 keySize, const void* keyData);
-u64* hashtbl_add(hashtbl_t* tbl, u32 keySize, const void* keyData);
+u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData);
+u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData);
 
-static u64* hashtbl_getstr(hashtbl_t* tbl, const char* keyData)
+static u64* hashTableGetStr(HashTable* tbl, const char* keyData)
 {
-    return hashtbl_get(tbl, (u32)strlen(keyData), keyData);
+    return hashTableGet(tbl, (u32)strlen(keyData), keyData);
 }
-static u64* hashtbl_addstr(hashtbl_t* tbl, const char* keyData)
+static u64* hashTableAddStr(HashTable* tbl, const char* keyData)
 {
-    return hashtbl_add(tbl, (u32)strlen(keyData), keyData);
+    return hashTableAdd(tbl, (u32)strlen(keyData), keyData);
 }
 
 
