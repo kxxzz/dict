@@ -77,18 +77,21 @@ void hashTableFree(HashTable* tbl)
 
 
 
-static u32 calcHash(u32 keySize, const void* keyData)
+static u32 calcHash(u32 keySize, const void* keyData, u32 seed)
 {
-    u32 seed = 0;
     u32 hash = XXH32(keyData, keySize, seed);
     return hash;
 }
 
+
+
+static u32 calcHash0(u32 keySize, const void* keyData)
+{
+    return calcHash(keySize, keyData, 0);
+}
 static u32 calcHash1(u32 keySize, const void* keyData)
 {
-    u32 seed = 1;
-    u32 hash = XXH32(keyData, keySize, seed);
-    return hash;
+    return calcHash(keySize, keyData, 1);
 }
 
 
@@ -144,7 +147,7 @@ static void hashTableEnlarge(HashTable* tbl)
         }
         u32 keySize = slot->key.size;
         const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
-        u32 hash = calcHash(keySize, keyData);
+        u32 hash = calcHash0(keySize, keyData);
         u32 step = hashTableCalcStep(tbl, keySize, keyData);
         u64 v = slot->val;
         {
@@ -176,7 +179,7 @@ static void hashTableEnlarge(HashTable* tbl)
 
 u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
-    u32 hash = calcHash(keySize, keyData);
+    u32 hash = calcHash0(keySize, keyData);
     u32 step = hashTableCalcStep(tbl, keySize, keyData);
     u32 si = hash % tbl->slotTable.length;
     for (;;)
@@ -209,7 +212,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
     {
         hashTableEnlarge(tbl);
     }
-    u32 hash = calcHash(keySize, keyData);
+    u32 hash = calcHash0(keySize, keyData);
     u32 step = hashTableCalcStep(tbl, keySize, keyData);
     {
         u32 si = hash % tbl->slotTable.length;
