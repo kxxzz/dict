@@ -35,12 +35,12 @@ static void test(void)
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         uintptr_t* a = hashTableAddStr(tbl, s[i]);
-        *a = i * 100;
+        *a = (i + 1) * 100;
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         uintptr_t* a = hashTableGetStr(tbl, s[i]);
-        assert(i * 100 == *a);
+        assert((i + 1) * 100 == *a);
 
         uintptr_t* a1 = hashTableGetStr(tbl, s1[i]);
         assert(!a1);

@@ -101,9 +101,29 @@ static u64* hashTableOccupySlot(HashTable* tbl, u32 si, u32 hash, u32 keySize, c
 static void hashTableEnlarge(HashTable* tbl)
 {
     u32 l0 = tbl->slotTable.length;
-    u32 l = !l0 ? 1 : l0 << 1;
-    vec_resize(&tbl->slotTable, l);
-    memset(tbl->slotTable.data + l0, 0, (l - l0) * sizeof(*tbl->slotTable.data));
+    u32 l1 = !l0 ? 1 : l0 << 1;
+    HashTable_SlotVec slotTable0 = tbl->slotTable;
+    memset(&tbl->slotTable, 0, sizeof(tbl->slotTable));
+    vec_resize(&tbl->slotTable, l1);
+    memset(tbl->slotTable.data, 0, l1 * sizeof(*tbl->slotTable.data));
+    for (u32 i = 0; i < slotTable0.length; ++i)
+    {
+        u32 keySize = slotTable0.data[i].key.size;
+        const void* keyData = tbl->keyDataBuf.data + slotTable0.data[i].key.offset;
+        u32 hash = calcHash(keySize, keyData);
+        u64 v = slotTable0.data[i].val;
+
+        for (u32 i = 0; i < tbl->slotTable.length; ++i)
+        {
+            u32 si = (hash + i) % tbl->slotTable.length;
+            if (!tbl->slotTable.data[si].occupied)
+            {
+                *hashTableOccupySlot(tbl, si, hash, keySize, keyData) = v;
+                break;
+            }
+        }
+    }
+    vec_free(&slotTable0);
 }
 
 
@@ -127,10 +147,11 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
             continue;
         }
         const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
-        if (0 == memcmp(keyData0, keyData, keySize))
+        if (memcmp(keyData0, keyData, keySize) != 0)
         {
-            return &tbl->slotTable.data[si].val;
+            continue;
         }
+        return &tbl->slotTable.data[si].val;
     }
     return NULL;
 }
@@ -150,13 +171,14 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         }
         if (tbl->slotTable.data[si].key.size != keySize)
         {
-            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
+            continue;
         }
         const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
-        if (0 == memcmp(keyData0, keyData, keySize))
+        if (memcmp(keyData0, keyData, keySize) != 0)
         {
-            return &tbl->slotTable.data[si].val;
+            continue;
         }
+        return &tbl->slotTable.data[si].val;
     }
     hashTableEnlarge(tbl);
     for (u32 i = 0; i < tbl->slotTable.length; ++i)
@@ -168,7 +190,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         }
         if (tbl->slotTable.data[si].key.size != keySize)
         {
-            return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
+            continue;
         }
     }
     assert(false);
