@@ -169,10 +169,7 @@ static void hashTableEnlarge(HashTable* tbl)
                     break;
                 }
                 si = hashTableNextSlot(tbl, si, step);
-                if (si == s0)
-                {
-                    assert(false);
-                }
+                assert(si != s0);
             }
         }
     }
