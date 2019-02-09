@@ -92,6 +92,15 @@ static u32 calcHash1(u32 keySize, const void* keyData)
 }
 
 
+static u32 hashTableNextSlot(HashTable* tbl, u32 si)
+{
+    si = (si + 1) % tbl->slotTable.length;
+    return si;
+}
+
+
+
+
 
 static u64* hashTableOccupySlot(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
@@ -121,7 +130,7 @@ static void hashTableEnlarge(HashTable* tbl)
         HashTable_Slot* slot = slotTable0.data + i;
         if (!slot->occupied)
         {
-            continue;
+            continue; 
         }
         u32 keySize = slot->key.size;
         const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
@@ -137,7 +146,7 @@ static void hashTableEnlarge(HashTable* tbl)
                     *hashTableOccupySlot(tbl, si, hash, keySize, keyData) = v;
                     break;
                 }
-                si = (si + 1) % tbl->slotTable.length;
+                si = hashTableNextSlot(tbl, si);
                 if (si == s0)
                 {
                     assert(false);
@@ -145,7 +154,7 @@ static void hashTableEnlarge(HashTable* tbl)
             }
         }
     }
-    vec_free(&slotTable0);
+    vec_free(&slotTable0);   
 }
 
 
@@ -176,7 +185,7 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
         }
         return &tbl->slotTable.data[si].val;
     next:
-        si = (si + 1) % tbl->slotTable.length;
+        si = hashTableNextSlot(tbl, si);
         if (si == s0)
         {
             break;
@@ -215,7 +224,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
             }
             return &tbl->slotTable.data[si].val;
         next:
-            si = (si + 1) % tbl->slotTable.length;
+            si = hashTableNextSlot(tbl, si);
             if (si == s0)
             {
                 break;
@@ -233,7 +242,7 @@ enlarge:
             {
                 return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
             }
-            si = (si + 1) % tbl->slotTable.length;
+            si = hashTableNextSlot(tbl, si);
             if (si == s0)
             {
                 break;
