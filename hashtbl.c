@@ -1,4 +1,4 @@
-#include "hashtable.h"
+#include "hashtbl.h"
 #include <assert.h>
 #include <vec.h>
 #include <xxhash.h>
@@ -30,39 +30,39 @@
 
 
 
-typedef struct HashTable_Key
+typedef struct hashtbl_Key
 {
     u32 offset;
     u32 size;
-} HashTable_Key;
+} hashtbl_Key;
 
 
-typedef struct HashTable_Cell
+typedef struct hashtbl_Cell
 {
     bool hasVal;
-    HashTable_Key key;
+    hashtbl_Key key;
     u64 val;
-} HashTable_Cell;
+} hashtbl_Cell;
 
-typedef vec_t(HashTable_Cell) HashTable_CellVec;
+typedef vec_t(hashtbl_Cell) hashtbl_CellVec;
 
 
 
-typedef struct HashTable
+typedef struct hashtbl_t
 {
     vec_u8 keyDataBuf;
-    HashTable_CellVec cellTable;
-} HashTable;
+    hashtbl_CellVec cellTable;
+} hashtbl_t;
 
-HashTable* newHashTable(u32 initSize)
+hashtbl_t* hashtbl_new(u32 initSize)
 {
-    HashTable* tbl = zalloc(sizeof(*tbl));
+    hashtbl_t* tbl = zalloc(sizeof(*tbl));
     vec_resize(&tbl->cellTable, initSize);
     memset(tbl->cellTable.data, 0, initSize * sizeof(*tbl->cellTable.data));
     return tbl;
 }
 
-void hashTableFree(HashTable* tbl)
+void hashtbl_free(hashtbl_t* tbl)
 {
     vec_free(&tbl->cellTable);
     vec_free(&tbl->keyDataBuf);
@@ -84,12 +84,12 @@ static u32 calc_hash(u32 keySize, const void* keyData)
 }
 
 
-static u64* hashTableAddCell(HashTable* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
+static u64* hashtbl_addCell(hashtbl_t* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
     u32 offset = tbl->keyDataBuf.length;
     vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
     assert(si < tbl->cellTable.length);
-    HashTable_Cell* cell = tbl->cellTable.data + si;
+    hashtbl_Cell* cell = tbl->cellTable.data + si;
     assert(!cell->hasVal);
     cell->hasVal = true;
     cell->key.offset = offset;
@@ -98,7 +98,7 @@ static u64* hashTableAddCell(HashTable* tbl, u32 si, u32 hash, u32 keySize, cons
 }
 
 
-static void hashTableEnlarge(HashTable* tbl)
+static void hashtbl_enlarge(hashtbl_t* tbl)
 {
     u32 l0 = tbl->cellTable.length;
     u32 l = !l0 ? 1 : l0 << 1;
@@ -112,7 +112,7 @@ static void hashTableEnlarge(HashTable* tbl)
 
 
 
-u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
+u64* hashtbl_get(hashtbl_t* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
@@ -138,7 +138,7 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 
 
 
-u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
+u64* hashtbl_add(hashtbl_t* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calc_hash(keySize, keyData);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
@@ -146,11 +146,11 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashtbl_addCell(tbl, si, hash, keySize, keyData);
         }
         if (tbl->cellTable.data[si].key.size != keySize)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashtbl_addCell(tbl, si, hash, keySize, keyData);
         }
         const void* keyData0 = tbl->keyDataBuf.data + tbl->cellTable.data[si].key.offset;
         if (0 == memcmp(keyData0, keyData, keySize))
@@ -158,17 +158,17 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
             return &tbl->cellTable.data[si].val;
         }
     }
-    hashTableEnlarge(tbl);
+    hashtbl_enlarge(tbl);
     for (u32 i = 0; i < tbl->cellTable.length; ++i)
     {
         u32 si = (hash + i) % tbl->cellTable.length;
         if (!tbl->cellTable.data[si].hasVal)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashtbl_addCell(tbl, si, hash, keySize, keyData);
         }
         if (tbl->cellTable.data[si].key.size != keySize)
         {
-            return hashTableAddCell(tbl, si, hash, keySize, keyData);
+            return hashtbl_addCell(tbl, si, hash, keySize, keyData);
         }
     }
     assert(false);

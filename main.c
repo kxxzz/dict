@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "hashtable.h"
+#include "hashtbl.h"
 
 
 
@@ -23,7 +23,7 @@
 
 static void test(void)
 {
-    HashTable* tbl = newHashTable(2);
+    hashtbl_t* tbl = hashtbl_new(2);
     char* s[] =
     {
         "a", "b", "c", "d", "e"
@@ -34,18 +34,18 @@ static void test(void)
     };
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
-        uintptr_t* a = hashTableAddStr(tbl, s[i]);
+        uintptr_t* a = hashtbl_addstr(tbl, s[i]);
         *a = i * 100;
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
-        uintptr_t* a = hashTableGetStr(tbl, s[i]);
+        uintptr_t* a = hashtbl_getstr(tbl, s[i]);
         assert(i * 100 == *a);
 
-        uintptr_t* a1 = hashTableGetStr(tbl, s1[i]);
+        uintptr_t* a1 = hashtbl_getstr(tbl, s1[i]);
         assert(!a1);
     }
-    hashTableFree(tbl);
+    hashtbl_free(tbl);
 }
 
 
