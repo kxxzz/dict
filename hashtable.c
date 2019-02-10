@@ -103,19 +103,18 @@ static u32 calcHash1(u32 keySize, const void* keyData)
 }
 
 
-static u32 hashTableCalcStep(HashTable* tbl, u32 keySize, const void* keyData)
+static u32 hashTableCalcShift(HashTable* tbl, u32 keySize, const void* keyData)
 {
-    u32 step = calcHash1(keySize, keyData);
-    step += step % 2 ? 0 : 1;
-    step = step % tbl->slotTable.length;
-    step = step ? step : 1;
-    return step;
+    u32 shift = calcHash1(keySize, keyData);
+    shift = shift % (tbl->slotTable.length - 1) + 1;
+    shift += shift % 2 ? 0 : 1;
+    return shift;
 }
 
 
-static u32 hashTableNextSlot(HashTable* tbl, u32 si, u32 step)
+static u32 hashTableNextSlot(HashTable* tbl, u32 si, u32 shift)
 {
-    si = (si + step) % tbl->slotTable.length;
+    si = (si + shift) % tbl->slotTable.length;
     return si;
 }
 
@@ -156,7 +155,7 @@ static void hashTableEnlarge(HashTable* tbl)
         u32 keySize = slot->key.size;
         const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
         u32 hash = calcHash(keySize, keyData);
-        u32 step = hashTableCalcStep(tbl, keySize, keyData);
+        u32 shift = hashTableCalcShift(tbl, keySize, keyData);
         u64 v = slot->val;
         {
             u32 si = hash % tbl->slotTable.length;
@@ -168,7 +167,7 @@ static void hashTableEnlarge(HashTable* tbl)
                     *hashTableOccupySlot(tbl, si, hash, keySize, keyData) = v;
                     break;
                 }
-                si = hashTableNextSlot(tbl, si, step);
+                si = hashTableNextSlot(tbl, si, shift);
                 assert(si != s0);
             }
         }
@@ -185,7 +184,7 @@ static void hashTableEnlarge(HashTable* tbl)
 u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 hash = calcHash(keySize, keyData);
-    u32 step = hashTableCalcStep(tbl, keySize, keyData);
+    u32 shift = hashTableCalcShift(tbl, keySize, keyData);
     u32 si = hash % tbl->slotTable.length;
     for (;;)
     {
@@ -204,7 +203,7 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
         }
         return &tbl->slotTable.data[si].val;
     next:
-        si = hashTableNextSlot(tbl, si, step);
+        si = hashTableNextSlot(tbl, si, shift);
     }
 }
 
@@ -218,7 +217,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         hashTableEnlarge(tbl);
     }
     u32 hash = calcHash(keySize, keyData);
-    u32 step = hashTableCalcStep(tbl, keySize, keyData);
+    u32 shift = hashTableCalcShift(tbl, keySize, keyData);
     {
         u32 si = hash % tbl->slotTable.length;
         u32 s0 = si;
@@ -239,7 +238,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
             }
             return &tbl->slotTable.data[si].val;
         next:
-            si = hashTableNextSlot(tbl, si, step);
+            si = hashTableNextSlot(tbl, si, shift);
             if (si == s0)
             {
                 break;
@@ -257,7 +256,7 @@ enlarge:
             {
                 return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
             }
-            si = hashTableNextSlot(tbl, si, step);
+            si = hashTableNextSlot(tbl, si, shift);
             if (si == s0)
             {
                 break;
