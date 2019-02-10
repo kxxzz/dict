@@ -107,7 +107,8 @@ static u32 calcHash1(u32 keySize, const void* keyData)
 static u32 hashTableCalcShift(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 shift = calcHash1(keySize, keyData);
-    shift = shift % (tbl->slotTable.length - 1) + 1;
+    shift = (shift > 0) ? shift : 1;
+    shift = shift % tbl->slotTable.length;
     shift += shift % 2 ? 0 : 1;
     return shift;
 }
