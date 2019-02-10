@@ -103,6 +103,7 @@ static u32 calcHash1(u32 keySize, const void* keyData)
 }
 
 
+// https://math.stackexchange.com/questions/2251823/are-all-odd-numbers-coprime-to-powers-of-two
 static u32 hashTableCalcShift(HashTable* tbl, u32 keySize, const void* keyData)
 {
     u32 shift = calcHash1(keySize, keyData);
