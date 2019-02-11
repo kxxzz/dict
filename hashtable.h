@@ -30,15 +30,15 @@ HashTable* newHashTable(u32 initSize);
 void hashTableFree(HashTable* tbl);
 
 u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData);
-u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData);
+u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData, bool* isNew);
 
 static u64* hashTableGetStr(HashTable* tbl, const char* keyData)
 {
     return hashTableGet(tbl, (u32)strlen(keyData), keyData);
 }
-static u64* hashTableAddStr(HashTable* tbl, const char* keyData)
+static u64* hashTableAddStr(HashTable* tbl, const char* keyData, bool* isNew)
 {
-    return hashTableAdd(tbl, (u32)strlen(keyData), keyData);
+    return hashTableAdd(tbl, (u32)strlen(keyData), keyData, isNew);
 }
 
 

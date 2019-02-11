@@ -34,8 +34,16 @@ static void test(void)
     };
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
-        uintptr_t* a = hashTableAddStr(tbl, s[i]);
+        bool isNew = false;
+        uintptr_t* a = hashTableAddStr(tbl, s[i], &isNew);
         *a = (i + 1) * 100;
+        assert(isNew);
+    }
+    for (u32 i = 0; i < ARYLEN(s); ++i)
+    {
+        bool isNew = true;
+        hashTableAddStr(tbl, s[i], &isNew);
+        assert(!isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {

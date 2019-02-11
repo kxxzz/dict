@@ -212,7 +212,7 @@ u64* hashTableGet(HashTable* tbl, u32 keySize, const void* keyData)
 
 
 
-u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
+u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData, bool* isNew)
 {
     if (tbl->numSlotsUsed > tbl->slotTable.length*0.75f)
     {
@@ -227,6 +227,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
         {
             if (!tbl->slotTable.data[si].occupied)
             {
+                if (isNew) *isNew = true;
                 return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
             }
             if (tbl->slotTable.data[si].key.size != keySize)
@@ -238,6 +239,7 @@ u64* hashTableAdd(HashTable* tbl, u32 keySize, const void* keyData)
             {
                 goto next;
             }
+            if (isNew) *isNew = false;
             return &tbl->slotTable.data[si].val;
         next:
             si = hashTableNextSlot(tbl, si, shift);
@@ -256,6 +258,7 @@ enlarge:
         {
             if (!tbl->slotTable.data[si].occupied)
             {
+                if (isNew) *isNew = true;
                 return hashTableOccupySlot(tbl, si, hash, keySize, keyData);
             }
             si = hashTableNextSlot(tbl, si, shift);
