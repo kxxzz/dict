@@ -277,11 +277,27 @@ enlarge:
 
 
 
+u32 hashTableElmsTotal(HashTable* tbl)
+{
+    return tbl->numSlotsUsed;
+}
 
 
 
-
-
+void hashTableForEach(HashTable* tbl, HashTableElmCallback cb)
+{
+    for (u32 i = 0; i < tbl->slotTable.length; ++i)
+    {
+        HashTable_Slot* slot = tbl->slotTable.data + i;
+        if (!slot->occupied)
+        {
+            continue;
+        }
+        u32 keySize = slot->key.size;
+        const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
+        cb(keySize, keyData, &slot->val);
+    }
+}
 
 
 

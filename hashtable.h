@@ -41,12 +41,12 @@ static u64* hashTableAddStr(HashTable* tbl, const char* keyData, bool* isNew)
     return hashTableAdd(tbl, (u32)strlen(keyData), keyData, isNew);
 }
 
+u32 hashTableElmsTotal(HashTable* tbl);
 
 
+typedef void(*HashTableElmCallback)(u32 keySize, const void* keyData, u64* value);
 
-
-
-
+void hashTableForEach(HashTable* tbl, HashTableElmCallback cb);
 
 
 
