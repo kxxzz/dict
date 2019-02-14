@@ -27,26 +27,26 @@ typedef double f64;
 typedef struct Dict Dict;
 
 Dict* newDict(u32 initSize);
-void dictFree(Dict* tbl);
+void dictFree(Dict* dict);
 
-u64* dictGet(Dict* tbl, u32 keySize, const void* keyData);
-u64* dictAdd(Dict* tbl, u32 keySize, const void* keyData, bool* isNew);
+u64* dictGet(Dict* dict, u32 keySize, const void* keyData);
+u64* dictAdd(Dict* dict, u32 keySize, const void* keyData, bool* isNew);
 
-static u64* dictGetStr(Dict* tbl, const char* keyData)
+static u64* dictGetStr(Dict* dict, const char* keyData)
 {
-    return dictGet(tbl, (u32)strlen(keyData), keyData);
+    return dictGet(dict, (u32)strlen(keyData), keyData);
 }
-static u64* dictAddStr(Dict* tbl, const char* keyData, bool* isNew)
+static u64* dictAddStr(Dict* dict, const char* keyData, bool* isNew)
 {
-    return dictAdd(tbl, (u32)strlen(keyData), keyData, isNew);
+    return dictAdd(dict, (u32)strlen(keyData), keyData, isNew);
 }
 
-u32 dictElmsTotal(Dict* tbl);
+u32 dictElmsTotal(Dict* dict);
 
 
 typedef void(*DictElmCallback)(u32 keySize, const void* keyData, u64* value);
 
-void dictForEach(Dict* tbl, DictElmCallback cb);
+void dictForEach(Dict* dict, DictElmCallback cb);
 
 
 

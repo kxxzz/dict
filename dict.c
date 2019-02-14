@@ -65,17 +65,17 @@ typedef struct Dict
 
 Dict* newDict(u32 initSize)
 {
-    Dict* tbl = zalloc(sizeof(*tbl));
-    vec_resize(&tbl->slotTable, initSize);
-    memset(tbl->slotTable.data, 0, initSize * sizeof(*tbl->slotTable.data));
-    return tbl;
+    Dict* dict = zalloc(sizeof(*dict));
+    vec_resize(&dict->slotTable, initSize);
+    memset(dict->slotTable.data, 0, initSize * sizeof(*dict->slotTable.data));
+    return dict;
 }
 
-void dictFree(Dict* tbl)
+void dictFree(Dict* dict)
 {
-    vec_free(&tbl->slotTable);
-    vec_free(&tbl->keyDataBuf);
-    free(tbl);
+    vec_free(&dict->slotTable);
+    vec_free(&dict->keyDataBuf);
+    free(dict);
 }
 
 
@@ -104,19 +104,19 @@ static u32 calcHash1(u32 keySize, const void* keyData)
 
 
 // https://math.stackexchange.com/questions/2251823/are-all-odd-numbers-coprime-to-powers-of-two
-static u32 dictCalcShift(Dict* tbl, u32 keySize, const void* keyData)
+static u32 dictCalcShift(Dict* dict, u32 keySize, const void* keyData)
 {
     u32 shift = calcHash1(keySize, keyData);
     shift = (shift > 0) ? shift : 1;
-    shift = shift % tbl->slotTable.length;
+    shift = shift % dict->slotTable.length;
     shift += shift % 2 ? 0 : 1;
     return shift;
 }
 
 
-static u32 dictNextSlot(Dict* tbl, u32 si, u32 shift)
+static u32 dictNextSlot(Dict* dict, u32 si, u32 shift)
 {
-    si = (si + shift) % tbl->slotTable.length;
+    si = (si + shift) % dict->slotTable.length;
     return si;
 }
 
@@ -124,13 +124,13 @@ static u32 dictNextSlot(Dict* tbl, u32 si, u32 shift)
 
 
 
-static u64* dictOccupySlot(Dict* tbl, u32 si, u32 hash, u32 keySize, const void* keyData)
+static u64* dictOccupySlot(Dict* dict, u32 si, u32 hash, u32 keySize, const void* keyData)
 {
-    ++tbl->numSlotsUsed;
-    u32 offset = tbl->keyDataBuf.length;
-    vec_pusharr(&tbl->keyDataBuf, keyData, keySize);
-    assert(si < tbl->slotTable.length);
-    Dict_Slot* slot = tbl->slotTable.data + si;
+    ++dict->numSlotsUsed;
+    u32 offset = dict->keyDataBuf.length;
+    vec_pusharr(&dict->keyDataBuf, keyData, keySize);
+    assert(si < dict->slotTable.length);
+    Dict_Slot* slot = dict->slotTable.data + si;
     assert(!slot->occupied);
     slot->occupied = true;
     slot->key.offset = offset;
@@ -139,14 +139,14 @@ static u64* dictOccupySlot(Dict* tbl, u32 si, u32 hash, u32 keySize, const void*
 }
 
 
-static void dictEnlarge(Dict* tbl)
+static void dictEnlarge(Dict* dict)
 {
-    u32 l0 = tbl->slotTable.length;
+    u32 l0 = dict->slotTable.length;
     u32 l1 = !l0 ? 1 : l0 << 1;
-    Dict_SlotVec slotTable0 = tbl->slotTable;
-    memset(&tbl->slotTable, 0, sizeof(tbl->slotTable));
-    vec_resize(&tbl->slotTable, l1);
-    memset(tbl->slotTable.data, 0, l1 * sizeof(*tbl->slotTable.data));
+    Dict_SlotVec slotTable0 = dict->slotTable;
+    memset(&dict->slotTable, 0, sizeof(dict->slotTable));
+    vec_resize(&dict->slotTable, l1);
+    memset(dict->slotTable.data, 0, l1 * sizeof(*dict->slotTable.data));
     for (u32 i = 0; i < slotTable0.length; ++i)
     {
         Dict_Slot* slot = slotTable0.data + i;
@@ -155,21 +155,21 @@ static void dictEnlarge(Dict* tbl)
             continue; 
         }
         u32 keySize = slot->key.size;
-        const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
+        const void* keyData = dict->keyDataBuf.data + slot->key.offset;
         u32 hash = calcHash(keySize, keyData);
-        u32 shift = dictCalcShift(tbl, keySize, keyData);
+        u32 shift = dictCalcShift(dict, keySize, keyData);
         u64 v = slot->val;
         {
-            u32 si = hash % tbl->slotTable.length;
+            u32 si = hash % dict->slotTable.length;
             u32 s0 = si;
             for (;;)
             {
-                if (!tbl->slotTable.data[si].occupied)
+                if (!dict->slotTable.data[si].occupied)
                 {
-                    *dictOccupySlot(tbl, si, hash, keySize, keyData) = v;
+                    *dictOccupySlot(dict, si, hash, keySize, keyData) = v;
                     break;
                 }
-                si = dictNextSlot(tbl, si, shift);
+                si = dictNextSlot(dict, si, shift);
                 assert(si != s0);
             }
         }
@@ -183,66 +183,66 @@ static void dictEnlarge(Dict* tbl)
 
 
 
-u64* dictGet(Dict* tbl, u32 keySize, const void* keyData)
+u64* dictGet(Dict* dict, u32 keySize, const void* keyData)
 {
     u32 hash = calcHash(keySize, keyData);
-    u32 shift = dictCalcShift(tbl, keySize, keyData);
-    u32 si = hash % tbl->slotTable.length;
+    u32 shift = dictCalcShift(dict, keySize, keyData);
+    u32 si = hash % dict->slotTable.length;
     for (;;)
     {
-        if (!tbl->slotTable.data[si].occupied)
+        if (!dict->slotTable.data[si].occupied)
         {
             return NULL;
         }
-        if (tbl->slotTable.data[si].key.size != keySize)
+        if (dict->slotTable.data[si].key.size != keySize)
         {
             goto next;
         }
-        const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
+        const void* keyData0 = dict->keyDataBuf.data + dict->slotTable.data[si].key.offset;
         if (memcmp(keyData0, keyData, keySize) != 0)
         {
             goto next;
         }
-        return &tbl->slotTable.data[si].val;
+        return &dict->slotTable.data[si].val;
     next:
-        si = dictNextSlot(tbl, si, shift);
+        si = dictNextSlot(dict, si, shift);
     }
 }
 
 
 
 
-u64* dictAdd(Dict* tbl, u32 keySize, const void* keyData, bool* isNew)
+u64* dictAdd(Dict* dict, u32 keySize, const void* keyData, bool* isNew)
 {
-    if (tbl->numSlotsUsed > tbl->slotTable.length*0.75f)
+    if (dict->numSlotsUsed > dict->slotTable.length*0.75f)
     {
-        dictEnlarge(tbl);
+        dictEnlarge(dict);
     }
     u32 hash = calcHash(keySize, keyData);
-    u32 shift = dictCalcShift(tbl, keySize, keyData);
+    u32 shift = dictCalcShift(dict, keySize, keyData);
     {
-        u32 si = hash % tbl->slotTable.length;
+        u32 si = hash % dict->slotTable.length;
         u32 s0 = si;
         for (;;)
         {
-            if (!tbl->slotTable.data[si].occupied)
+            if (!dict->slotTable.data[si].occupied)
             {
                 if (isNew) *isNew = true;
-                return dictOccupySlot(tbl, si, hash, keySize, keyData);
+                return dictOccupySlot(dict, si, hash, keySize, keyData);
             }
-            if (tbl->slotTable.data[si].key.size != keySize)
+            if (dict->slotTable.data[si].key.size != keySize)
             {
                 goto next;
             }
-            const void* keyData0 = tbl->keyDataBuf.data + tbl->slotTable.data[si].key.offset;
+            const void* keyData0 = dict->keyDataBuf.data + dict->slotTable.data[si].key.offset;
             if (memcmp(keyData0, keyData, keySize) != 0)
             {
                 goto next;
             }
             if (isNew) *isNew = false;
-            return &tbl->slotTable.data[si].val;
+            return &dict->slotTable.data[si].val;
         next:
-            si = dictNextSlot(tbl, si, shift);
+            si = dictNextSlot(dict, si, shift);
             if (si == s0)
             {
                 break;
@@ -250,18 +250,18 @@ u64* dictAdd(Dict* tbl, u32 keySize, const void* keyData, bool* isNew)
         }
     }
 enlarge:
-    dictEnlarge(tbl);
+    dictEnlarge(dict);
     {
-        u32 si = hash % tbl->slotTable.length;
+        u32 si = hash % dict->slotTable.length;
         u32 s0 = si;
         for (;;)
         {
-            if (!tbl->slotTable.data[si].occupied)
+            if (!dict->slotTable.data[si].occupied)
             {
                 if (isNew) *isNew = true;
-                return dictOccupySlot(tbl, si, hash, keySize, keyData);
+                return dictOccupySlot(dict, si, hash, keySize, keyData);
             }
-            si = dictNextSlot(tbl, si, shift);
+            si = dictNextSlot(dict, si, shift);
             if (si == s0)
             {
                 break;
@@ -277,24 +277,24 @@ enlarge:
 
 
 
-u32 dictElmsTotal(Dict* tbl)
+u32 dictElmsTotal(Dict* dict)
 {
-    return tbl->numSlotsUsed;
+    return dict->numSlotsUsed;
 }
 
 
 
-void dictForEach(Dict* tbl, DictElmCallback cb)
+void dictForEach(Dict* dict, DictElmCallback cb)
 {
-    for (u32 i = 0; i < tbl->slotTable.length; ++i)
+    for (u32 i = 0; i < dict->slotTable.length; ++i)
     {
-        Dict_Slot* slot = tbl->slotTable.data + i;
+        Dict_Slot* slot = dict->slotTable.data + i;
         if (!slot->occupied)
         {
             continue;
         }
         u32 keySize = slot->key.size;
-        const void* keyData = tbl->keyDataBuf.data + slot->key.offset;
+        const void* keyData = dict->keyDataBuf.data + slot->key.offset;
         cb(keySize, keyData, &slot->val);
     }
 }

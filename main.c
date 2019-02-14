@@ -23,7 +23,7 @@
 
 static void test(void)
 {
-    Dict* tbl = newDict(2);
+    Dict* dict = newDict(2);
     char* s[] =
     {
         "a", "b", "c", "d", "e"
@@ -35,25 +35,25 @@ static void test(void)
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         bool isNew = false;
-        uintptr_t* a = dictAddStr(tbl, s[i], &isNew);
+        uintptr_t* a = dictAddStr(dict, s[i], &isNew);
         *a = (i + 1) * 100;
         assert(isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         bool isNew = true;
-        dictAddStr(tbl, s[i], &isNew);
+        dictAddStr(dict, s[i], &isNew);
         assert(!isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
-        uintptr_t* a = dictGetStr(tbl, s[i]);
+        uintptr_t* a = dictGetStr(dict, s[i]);
         assert((i + 1) * 100 == *a);
 
-        uintptr_t* a1 = dictGetStr(tbl, s1[i]);
+        uintptr_t* a1 = dictGetStr(dict, s1[i]);
         assert(!a1);
     }
-    dictFree(tbl);
+    dictFree(dict);
 }
 
 
