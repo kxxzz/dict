@@ -121,20 +121,22 @@ static u32 upoolNextSlot(Upool* pool, u32 si, u32 shift)
 
 
 
-
-
-static u32 upoolOccupySlot(Upool* pool, u32 si, u32 hash, u32 elmSize, const void* elmData)
+static u32 upoolAddData(Upool* pool, u32 elmSize, const void* elmData)
 {
-    ++pool->numSlotsUsed;
     u32 offset = pool->dataBuf.length;
     vec_pusharr(&pool->dataBuf, elmData, elmSize);
+    return offset;
+}
+
+static void upoolOccupySlot(Upool* pool, u32 si, u32 hash, u32 elmSize, u32 elmOffset)
+{
+    ++pool->numSlotsUsed;
     assert(si < pool->slotTable.length);
     Upool_Slot* slot = pool->slotTable.data + si;
     assert(!slot->occupied);
     slot->occupied = true;
-    slot->elm.offset = offset;
+    slot->elm.offset = elmOffset;
     slot->elm.size = elmSize;
-    return offset;
 }
 
 
@@ -154,7 +156,8 @@ static void upoolEnlarge(Upool* pool)
             continue; 
         }
         u32 elmSize = slot->elm.size;
-        const void* elmData = pool->dataBuf.data + slot->elm.offset;
+        u32 elmOffset = slot->elm.offset;
+        const void* elmData = pool->dataBuf.data + elmOffset;
         u32 hash = calcHash(elmSize, elmData);
         u32 shift = upoolCalcShift(pool, elmSize, elmData);
         {
@@ -164,7 +167,7 @@ static void upoolEnlarge(Upool* pool)
             {
                 if (!pool->slotTable.data[si].occupied)
                 {
-                    upoolOccupySlot(pool, si, hash, elmSize, elmData);
+                    upoolOccupySlot(pool, si, hash, elmSize, elmOffset);
                     break;
                 }
                 si = upoolNextSlot(pool, si, shift);
@@ -226,7 +229,9 @@ u32 upoolAdd(Upool* pool, u32 elmSize, const void* elmData, bool* isNew)
             if (!pool->slotTable.data[si].occupied)
             {
                 if (isNew) *isNew = true;
-                return upoolOccupySlot(pool, si, hash, elmSize, elmData);
+                u32 elmOffset = upoolAddData(pool, elmSize, elmData);
+                upoolOccupySlot(pool, si, hash, elmSize, elmOffset);
+                return elmOffset;
             }
             if (pool->slotTable.data[si].elm.size != elmSize)
             {
@@ -257,7 +262,9 @@ enlarge:
             if (!pool->slotTable.data[si].occupied)
             {
                 if (isNew) *isNew = true;
-                return upoolOccupySlot(pool, si, hash, elmSize, elmData);
+                u32 elmOffset = upoolAddData(pool, elmSize, elmData);
+                upoolOccupySlot(pool, si, hash, elmSize, elmOffset);
+                return elmOffset;
             }
             si = upoolNextSlot(pool, si, shift);
             if (si == s0)
