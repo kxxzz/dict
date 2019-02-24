@@ -39,14 +39,7 @@ void upoolFree(Upool* pool);
 u32 upoolGet(Upool* pool, u32 elmSize, const void* elmData);
 u32 upoolAdd(Upool* pool, u32 elmSize, const void* elmData, bool* isNew);
 
-static u32 upoolGetCstr(Upool* pool, const char* elmData)
-{
-    return upoolGet(pool, (u32)strlen(elmData), elmData);
-}
-static u32 upoolAddCstr(Upool* pool, const char* elmData, bool* isNew)
-{
-    return upoolAdd(pool, (u32)strlen(elmData), elmData, isNew);
-}
+
 
 u32 upoolElmsTotal(Upool* pool);
 
@@ -59,7 +52,14 @@ void upoolForEach(Upool* pool, UpoolElmCallback cb);
 
 
 
-
+static u32 upoolGetCstr(Upool* pool, const char* elmData)
+{
+    return upoolGet(pool, (u32)strlen(elmData), elmData);
+}
+static u32 upoolAddCstr(Upool* pool, const char* elmData, bool* isNew)
+{
+    return upoolAdd(pool, (u32)strlen(elmData), elmData, isNew);
+}
 
 
 
