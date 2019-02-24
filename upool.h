@@ -1,6 +1,7 @@
 #pragma once
 
 
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <malloc.h>
@@ -22,12 +23,10 @@ typedef double f64;
 
 
 
-
 typedef struct Upool Upool;
 
 Upool* newUpool(u32 initSize);
 void upoolFree(Upool* pool);
-
 
 
 
@@ -51,7 +50,6 @@ u32 upoolElmsTotal(Upool* pool);
 typedef void(*UpoolElmCallback)(u32 elmSize, const void* elmData);
 
 void upoolForEach(Upool* pool, UpoolElmCallback cb);
-
 
 
 
