@@ -292,7 +292,6 @@ const void* upoolElmData(Upool* pool, u32 id)
 
 
 
-
 u32 upoolElmsTotal(Upool* pool)
 {
     return pool->numSlotsUsed;
