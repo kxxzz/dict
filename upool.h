@@ -22,12 +22,6 @@ typedef double f64;
 
 
 
-enum
-{
-    Upool_ID_NULL = -1,
-};
-
-
 
 typedef struct Upool Upool;
 
@@ -36,8 +30,18 @@ void upoolFree(Upool* pool);
 
 
 
-u32 upoolGet(Upool* pool, u32 elmSize, const void* elmData);
-u32 upoolAdd(Upool* pool, u32 elmSize, const void* elmData, bool* isNew);
+
+enum
+{
+    Upool_ElmID_NULL = -1,
+};
+
+u32 upoolGetElm(Upool* pool, u32 elmSize, const void* elmData);
+u32 upoolAddElm(Upool* pool, u32 elmSize, const void* elmData, bool* isNew);
+
+
+
+const void* upoolElmData(Upool* pool, u32 id);
 
 
 
@@ -54,11 +58,11 @@ void upoolForEach(Upool* pool, UpoolElmCallback cb);
 
 static u32 upoolGetCstr(Upool* pool, const char* elmData)
 {
-    return upoolGet(pool, (u32)strlen(elmData), elmData);
+    return upoolGetElm(pool, (u32)strlen(elmData), elmData);
 }
 static u32 upoolAddCstr(Upool* pool, const char* elmData, bool* isNew)
 {
-    return upoolAdd(pool, (u32)strlen(elmData), elmData, isNew);
+    return upoolAddElm(pool, (u32)strlen(elmData), elmData, isNew);
 }
 
 

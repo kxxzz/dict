@@ -184,7 +184,7 @@ static void upoolEnlarge(Upool* pool)
 
 
 
-u32 upoolGet(Upool* pool, u32 elmSize, const void* elmData)
+u32 upoolGetElm(Upool* pool, u32 elmSize, const void* elmData)
 {
     u32 hash = calcHash(elmSize, elmData);
     u32 shift = upoolCalcShift(pool, elmSize, elmData);
@@ -193,7 +193,7 @@ u32 upoolGet(Upool* pool, u32 elmSize, const void* elmData)
     {
         if (!pool->slotTable.data[si].occupied)
         {
-            return Upool_ID_NULL;
+            return Upool_ElmID_NULL;
         }
         if (pool->slotTable.data[si].elm.size != elmSize)
         {
@@ -213,7 +213,7 @@ u32 upoolGet(Upool* pool, u32 elmSize, const void* elmData)
 
 
 
-u32 upoolAdd(Upool* pool, u32 elmSize, const void* elmData, bool* isNew)
+u32 upoolAddElm(Upool* pool, u32 elmSize, const void* elmData, bool* isNew)
 {
     if (pool->numSlotsUsed > pool->slotTable.length*0.75f)
     {
@@ -275,6 +275,17 @@ enlarge:
     }
     goto enlarge;
 }
+
+
+
+
+
+
+const void* upoolElmData(Upool* pool, u32 id)
+{
+    return pool->dataBuf.data + id;
+}
+
 
 
 
