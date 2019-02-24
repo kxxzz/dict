@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "dict.h"
+#include "upool.h"
 
 
 
@@ -23,7 +23,7 @@
 
 static void test(void)
 {
-    Dict* dict = newDict(2);
+    Upool* pool = newUpool(2);
     char* s[] =
     {
         "a", "b", "c", "d", "e"
@@ -32,28 +32,30 @@ static void test(void)
     {
         "x", "y", "z", "a1", "b1"
     };
+    u32 ids[ARYLEN(s)] = { 0 };
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         bool isNew = false;
-        uintptr_t* a = dictAddStr(dict, s[i], &isNew);
-        *a = (i + 1) * 100;
+        u32 id = upoolAddStr(pool, s[i], &isNew);
+        ids[i] = id;
         assert(isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         bool isNew = true;
-        dictAddStr(dict, s[i], &isNew);
+        u32 id = upoolAddStr(pool, s[i], &isNew);
+        assert(id == ids[i]);
         assert(!isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
-        uintptr_t* a = dictGetStr(dict, s[i]);
-        assert((i + 1) * 100 == *a);
+        u32 id = upoolGetStr(pool, s[i]);
+        assert(id == ids[i]);
 
-        uintptr_t* a1 = dictGetStr(dict, s1[i]);
-        assert(!a1);
+        u32 id1 = upoolGetStr(pool, s1[i]);
+        assert(-1 == id1);
     }
-    dictFree(dict);
+    upoolFree(pool);
 }
 
 
