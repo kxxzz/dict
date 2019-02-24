@@ -36,23 +36,23 @@ static void test(void)
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         bool isNew = false;
-        u32 id = upoolAddStr(pool, s[i], &isNew);
+        u32 id = upoolAddCstr(pool, s[i], &isNew);
         ids[i] = id;
         assert(isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
         bool isNew = true;
-        u32 id = upoolAddStr(pool, s[i], &isNew);
+        u32 id = upoolAddCstr(pool, s[i], &isNew);
         assert(id == ids[i]);
         assert(!isNew);
     }
     for (u32 i = 0; i < ARYLEN(s); ++i)
     {
-        u32 id = upoolGetStr(pool, s[i]);
+        u32 id = upoolGetCstr(pool, s[i]);
         assert(id == ids[i]);
 
-        u32 id1 = upoolGetStr(pool, s1[i]);
+        u32 id1 = upoolGetCstr(pool, s1[i]);
         assert(-1 == id1);
     }
     upoolFree(pool);
