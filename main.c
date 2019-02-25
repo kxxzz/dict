@@ -55,6 +55,7 @@ static void test(void)
         u32 id1 = upoolGetCstr(pool, s1[i]);
         assert(-1 == id1);
     }
+    assert(ARYLEN(s) == upoolElmsTotal(pool));
     upoolFree(pool);
 }
 

@@ -123,6 +123,7 @@ static u32 upoolNextSlot(Upool* pool, u32 si, u32 shift)
 
 static u32 upoolAddData(Upool* pool, u32 elmSize, const void* elmData)
 {
+    ++pool->numSlotsUsed;
     u32 offset = pool->dataBuf.length;
     vec_pusharr(&pool->dataBuf, elmData, elmSize);
     return offset;
@@ -130,7 +131,6 @@ static u32 upoolAddData(Upool* pool, u32 elmSize, const void* elmData)
 
 static void upoolOccupySlot(Upool* pool, u32 si, u32 hash, u32 elmSize, u32 elmOffset)
 {
-    ++pool->numSlotsUsed;
     assert(si < pool->slotTable.length);
     Upool_Slot* slot = pool->slotTable.data + si;
     assert(!slot->occupied);
