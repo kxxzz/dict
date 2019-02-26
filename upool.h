@@ -35,8 +35,8 @@ enum
     Upool_ElmID_NULL = -1,
 };
 
-u32 upoolGetElm(Upool* pool, u32 elmSize, const void* elmData);
-u32 upoolAddElm(Upool* pool, u32 elmSize, const void* elmData, bool* isNew);
+u32 upoolGetElm(Upool* pool, const void* elmData, u32 elmSize);
+u32 upoolAddElm(Upool* pool, const void* elmData, u32 elmSize, bool* isNew);
 
 
 
@@ -47,7 +47,7 @@ const void* upoolElmData(Upool* pool, u32 id);
 u32 upoolElmsTotal(Upool* pool);
 
 
-typedef void(*UpoolElmCallback)(u32 elmSize, const void* elmData);
+typedef void(*UpoolElmCallback)(const void* elmData, u32 elmSize);
 
 void upoolForEach(Upool* pool, UpoolElmCallback cb);
 
@@ -56,11 +56,11 @@ void upoolForEach(Upool* pool, UpoolElmCallback cb);
 
 static u32 upoolGetCstr(Upool* pool, const char* elmData)
 {
-    return upoolGetElm(pool, (u32)strlen(elmData), elmData);
+    return upoolGetElm(pool, elmData, (u32)strlen(elmData));
 }
 static u32 upoolAddCstr(Upool* pool, const char* elmData, bool* isNew)
 {
-    return upoolAddElm(pool, (u32)strlen(elmData), elmData, isNew);
+    return upoolAddElm(pool, elmData, (u32)strlen(elmData), isNew);
 }
 
 
