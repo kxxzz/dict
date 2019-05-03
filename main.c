@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+//#define UPOOL_DOUBLEHASHING
 #include "upool.h"
 
 

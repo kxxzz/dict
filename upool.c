@@ -142,6 +142,7 @@ static void upoolOccupySlot(Upool* pool, u32 si, u32 hash, u32 elmSize, u32 elmO
 
 static void upoolEnlarge(Upool* pool)
 {
+    pool->numSlotsUsed = 0;
     u32 l0 = pool->slotTable.length;
     u32 l1 = !l0 ? 1 : l0 << 1;
     Upool_SlotVec slotTable0 = pool->slotTable;
@@ -159,7 +160,11 @@ static void upoolEnlarge(Upool* pool)
         u32 elmOffset = slot->elm.offset;
         const void* elmData = pool->dataBuf.data + elmOffset;
         u32 hash = calcHash(elmSize, elmData);
-        u32 shift = upoolCalcShift(pool, elmData, elmSize);
+#ifdef UPOOL_DOUBLEHASHING
+        const u32 shift = upoolCalcShift(pool, elmData, elmSize);
+#else
+        const u32 shift = 1;
+#endif
         {
             u32 si = hash % pool->slotTable.length;
             u32 s0 = si;
@@ -187,7 +192,11 @@ static void upoolEnlarge(Upool* pool)
 u32 upoolGetElm(Upool* pool, const void* elmData, u32 elmSize)
 {
     u32 hash = calcHash(elmSize, elmData);
-    u32 shift = upoolCalcShift(pool, elmData, elmSize);
+#ifdef UPOOL_DOUBLEHASHING
+    const u32 shift = upoolCalcShift(pool, elmData, elmSize);
+#else
+    const u32 shift = 1;
+#endif
     u32 si = hash % pool->slotTable.length;
     for (;;)
     {
@@ -220,7 +229,11 @@ u32 upoolAddElm(Upool* pool, const void* elmData, u32 elmSize, bool* isNew)
         upoolEnlarge(pool);
     }
     u32 hash = calcHash(elmSize, elmData);
-    u32 shift = upoolCalcShift(pool, elmData, elmSize);
+#ifdef UPOOL_DOUBLEHASHING
+    const u32 shift = upoolCalcShift(pool, elmData, elmSize);
+#else
+    const u32 shift = 1;
+#endif
     {
         u32 si = hash % pool->slotTable.length;
         u32 s0 = si;
