@@ -132,7 +132,6 @@ static u32 upoolAddData(Upool* pool, const void* elmData, u32 elmSize)
 {
     u32 offset = pool->dataBuf.length;
     vec_pusharr(&pool->dataBuf, elmData, elmSize);
-    vec_push(&pool->dataBuf, 0);
     u32 a = align(pool->dataBuf.length, sizeof(uintptr_t));
     vec_resize(&pool->dataBuf, a);
     return offset;
