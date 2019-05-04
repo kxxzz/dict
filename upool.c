@@ -132,7 +132,6 @@ static u32 upoolAddData(Upool* pool, const void* elmData, u32 elmSize)
 {
     u32 offset = pool->dataBuf.length;
     vec_pusharr(&pool->dataBuf, elmData, elmSize);
-    vec_push(&pool->dataBuf, 0);
     u32 a = align(pool->dataBuf.length, sizeof(uintptr_t));
     vec_resize(&pool->dataBuf, a);
     return offset;
@@ -199,7 +198,7 @@ static void upoolEnlarge(Upool* pool)
 
 
 
-u32 upoolGetElm(Upool* pool, const void* elmData, u32 elmSize)
+u32 upoolFind(Upool* pool, const void* elmData, u32 elmSize)
 {
     u32 hash = calcHash(elmSize, elmData);
 #ifdef UPOOL_DOUBLEHASHING
@@ -232,7 +231,7 @@ u32 upoolGetElm(Upool* pool, const void* elmData, u32 elmSize)
 
 
 
-u32 upoolAddElm(Upool* pool, const void* elmData, u32 elmSize, bool* isNew)
+u32 upoolElm(Upool* pool, const void* elmData, u32 elmSize, bool* isNew)
 {
     if (pool->numSlotsUsed > pool->slotTable.length*0.75f)
     {
@@ -304,9 +303,9 @@ enlarge:
 
 
 
-const void* upoolElmData(Upool* pool, u32 id)
+const void* upoolElmData(Upool* pool, u32 offset)
 {
-    return pool->dataBuf.data + id;
+    return pool->dataBuf.data + offset;
 }
 
 
