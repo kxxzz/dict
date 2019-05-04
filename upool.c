@@ -29,6 +29,13 @@
 
 
 
+static u32 align(u32 x, u32 a)
+{
+    return (x + a - 1) / a * a;
+}
+
+
+
 enum
 {
     Upool_Seed_Hash = 0,
@@ -126,6 +133,8 @@ static u32 upoolAddData(Upool* pool, const void* elmData, u32 elmSize)
     u32 offset = pool->dataBuf.length;
     vec_pusharr(&pool->dataBuf, elmData, elmSize);
     vec_push(&pool->dataBuf, 0);
+    u32 a = align(pool->dataBuf.length, sizeof(uintptr_t));
+    vec_resize(&pool->dataBuf, a);
     return offset;
 }
 
