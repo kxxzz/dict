@@ -24,7 +24,7 @@
 
 static void test(void)
 {
-    Upool* pool = newUpool(2);
+    upool_t pool = upoolNew(2);
     char* s[] =
     {
         "a", "b", "c", "d", "e"

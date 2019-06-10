@@ -38,46 +38,46 @@ static u32 align(u32 x, u32 a)
 
 enum
 {
-    Upool_Seed_Hash = 0,
-    Upool_Seed_Hash1 = 1,
+    upool_Seed_Hash = 0,
+    upool_Seed_Hash1 = 1,
 };
 
 
 
 
-typedef struct Upool_Key
+typedef struct upool_Key
 {
     u32 offset;
     u32 size;
-} Upool_Key;
+} upool_Key;
 
 
-typedef struct Upool_Slot
+typedef struct upool_Slot
 {
     bool occupied;
-    Upool_Key elm;
-} Upool_Slot;
+    upool_Key elm;
+} upool_Slot;
 
-typedef vec_t(Upool_Slot) Upool_SlotVec;
+typedef vec_t(upool_Slot) upool_SlotVec;
 
 
 
-typedef struct Upool
+struct upool
 {
     vec_u8 dataBuf[1];
     u32 numSlotsUsed;
-    Upool_SlotVec slotTable[1];
-} Upool;
+    upool_SlotVec slotTable[1];
+};
 
-Upool* newUpool(u32 initSize)
+upool_t upoolNew(u32 initSize)
 {
-    Upool* pool = zalloc(sizeof(*pool));
+    upool_t pool = zalloc(sizeof(*pool));
     vec_resize(pool->slotTable, initSize);
     memset(pool->slotTable->data, 0, initSize * sizeof(*pool->slotTable->data));
     return pool;
 }
 
-void upoolFree(Upool* pool)
+void upoolFree(upool_t pool)
 {
     vec_free(pool->slotTable);
     vec_free(pool->dataBuf);
@@ -101,16 +101,16 @@ static u32 calcHashX(u32 size, const void* data, u32 seed)
 
 static u32 calcHash(u32 size, const void* data)
 {
-    return calcHashX(size, data, Upool_Seed_Hash);
+    return calcHashX(size, data, upool_Seed_Hash);
 }
 static u32 calcHash1(u32 elmSize, const void* data)
 {
-    return calcHashX(elmSize, data, Upool_Seed_Hash1);
+    return calcHashX(elmSize, data, upool_Seed_Hash1);
 }
 
 
 // https://math.stackexchange.com/questions/2251823/are-all-odd-numbers-coprime-to-powers-of-two
-static u32 upoolCalcShift(Upool* pool, const void* data, u32 size)
+static u32 upoolCalcShift(upool_t pool, const void* data, u32 size)
 {
     u32 shift = calcHash1(size, data);
     shift = (shift > 0) ? shift : 1;
@@ -120,7 +120,7 @@ static u32 upoolCalcShift(Upool* pool, const void* data, u32 size)
 }
 
 
-static u32 upoolNextSlot(Upool* pool, u32 si, u32 shift)
+static u32 upoolNextSlot(upool_t pool, u32 si, u32 shift)
 {
     si = (si + shift) % pool->slotTable->length;
     return si;
@@ -128,7 +128,7 @@ static u32 upoolNextSlot(Upool* pool, u32 si, u32 shift)
 
 
 
-static u32 upoolAddData(Upool* pool, const void* elmData, u32 elmSize)
+static u32 upoolAddData(upool_t pool, const void* elmData, u32 elmSize)
 {
     u32 offset = pool->dataBuf->length;
     vec_pusharr(pool->dataBuf, elmData, elmSize);
@@ -137,11 +137,11 @@ static u32 upoolAddData(Upool* pool, const void* elmData, u32 elmSize)
     return offset;
 }
 
-static void upoolOccupySlot(Upool* pool, u32 si, u32 hash, u32 elmSize, u32 elmOffset)
+static void upoolOccupySlot(upool_t pool, u32 si, u32 hash, u32 elmSize, u32 elmOffset)
 {
     ++pool->numSlotsUsed;
     assert(si < pool->slotTable->length);
-    Upool_Slot* slot = pool->slotTable->data + si;
+    upool_Slot* slot = pool->slotTable->data + si;
     assert(!slot->occupied);
     slot->occupied = true;
     slot->elm.offset = elmOffset;
@@ -149,18 +149,18 @@ static void upoolOccupySlot(Upool* pool, u32 si, u32 hash, u32 elmSize, u32 elmO
 }
 
 
-static void upoolEnlarge(Upool* pool)
+static void upoolEnlarge(upool_t pool)
 {
     pool->numSlotsUsed = 0;
     u32 l0 = pool->slotTable->length;
     u32 l1 = !l0 ? 1 : l0 << 1;
-    Upool_SlotVec slotTable0[1] = { pool->slotTable[0] };
+    upool_SlotVec slotTable0[1] = { pool->slotTable[0] };
     memset(pool->slotTable, 0, sizeof(pool->slotTable));
     vec_resize(pool->slotTable, l1);
     memset(pool->slotTable->data, 0, l1 * sizeof(*pool->slotTable->data));
     for (u32 i = 0; i < slotTable0->length; ++i)
     {
-        Upool_Slot* slot = slotTable0->data + i;
+        upool_Slot* slot = slotTable0->data + i;
         if (!slot->occupied)
         {
             continue; 
@@ -198,7 +198,7 @@ static void upoolEnlarge(Upool* pool)
 
 
 
-u32 upoolFind(Upool* pool, const void* elmData, u32 elmSize)
+u32 upoolFind(upool_t pool, const void* elmData, u32 elmSize)
 {
     u32 hash = calcHash(elmSize, elmData);
 #ifdef UPOOL_DOUBLEHASHING
@@ -211,7 +211,7 @@ u32 upoolFind(Upool* pool, const void* elmData, u32 elmSize)
     {
         if (!pool->slotTable->data[si].occupied)
         {
-            return Upool_ElmID_NULL;
+            return upool_ElmID_NULL;
         }
         if (pool->slotTable->data[si].elm.size != elmSize)
         {
@@ -231,7 +231,7 @@ u32 upoolFind(Upool* pool, const void* elmData, u32 elmSize)
 
 
 
-u32 upoolElm(Upool* pool, const void* elmData, u32 elmSize, bool* isNew)
+u32 upoolElm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew)
 {
     if (pool->numSlotsUsed > pool->slotTable->length*0.75f)
     {
@@ -303,7 +303,7 @@ enlarge:
 
 
 
-const void* upoolElmData(Upool* pool, u32 offset)
+const void* upoolElmData(upool_t pool, u32 offset)
 {
     return pool->dataBuf->data + offset;
 }
@@ -314,18 +314,18 @@ const void* upoolElmData(Upool* pool, u32 offset)
 
 
 
-u32 upoolElmsTotal(Upool* pool)
+u32 upoolElmsTotal(upool_t pool)
 {
     return pool->numSlotsUsed;
 }
 
 
 
-void upoolForEach(Upool* pool, UpoolElmCallback cb)
+void upoolForEach(upool_t pool, upool_ElmCallback cb)
 {
     for (u32 i = 0; i < pool->slotTable->length; ++i)
     {
-        Upool_Slot* slot = pool->slotTable->data + i;
+        upool_Slot* slot = pool->slotTable->data + i;
         if (!slot->occupied)
         {
             continue;

@@ -23,42 +23,42 @@ typedef double f64;
 
 
 
-typedef struct Upool Upool;
+typedef struct upool* upool_t;
 
-Upool* newUpool(u32 initSize);
-void upoolFree(Upool* pool);
+upool_t upoolNew(u32 initSize);
+void upoolFree(upool_t pool);
 
 
 
 enum
 {
-    Upool_ElmID_NULL = -1,
+    upool_ElmID_NULL = -1,
 };
 
-u32 upoolFind(Upool* pool, const void* elmData, u32 elmSize);
-u32 upoolElm(Upool* pool, const void* elmData, u32 elmSize, bool* isNew);
+u32 upoolFind(upool_t pool, const void* elmData, u32 elmSize);
+u32 upoolElm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew);
 
 
 
-const void* upoolElmData(Upool* pool, u32 offset);
+const void* upoolElmData(upool_t pool, u32 offset);
 
 
 
-u32 upoolElmsTotal(Upool* pool);
+u32 upoolElmsTotal(upool_t pool);
 
 
-typedef void(*UpoolElmCallback)(const void* elmData, u32 elmSize);
+typedef void(*upool_ElmCallback)(const void* elmData, u32 elmSize);
 
-void upoolForEach(Upool* pool, UpoolElmCallback cb);
-
-
+void upoolForEach(upool_t pool, upool_ElmCallback cb);
 
 
-static u32 upoolFindCstr(Upool* pool, const char* elmData)
+
+
+static u32 upoolFindCstr(upool_t pool, const char* elmData)
 {
     return upoolFind(pool, elmData, (u32)strlen(elmData));
 }
-static u32 upoolCstr(Upool* pool, const char* elmData, bool* isNew)
+static u32 upoolCstr(upool_t pool, const char* elmData, bool* isNew)
 {
     return upoolElm(pool, elmData, (u32)strlen(elmData), isNew);
 }
