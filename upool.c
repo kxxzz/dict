@@ -69,7 +69,7 @@ struct upool
     upool_SlotVec slotTable[1];
 };
 
-upool_t upoolNew(u32 initSize)
+upool_t upool_new(u32 initSize)
 {
     upool_t pool = zalloc(sizeof(*pool));
     vec_resize(pool->slotTable, initSize);
@@ -77,7 +77,7 @@ upool_t upoolNew(u32 initSize)
     return pool;
 }
 
-void upoolFree(upool_t pool)
+void upool_free(upool_t pool)
 {
     vec_free(pool->slotTable);
     vec_free(pool->dataBuf);
@@ -89,7 +89,7 @@ void upoolFree(upool_t pool)
 
 
 
-static u32 calcHashX(u32 size, const void* data, u32 seed)
+static u32 calc_hashX(u32 size, const void* data, u32 seed)
 {
     u32 hash = XXH32(data, size, seed);
     return hash;
@@ -99,20 +99,20 @@ static u32 calcHashX(u32 size, const void* data, u32 seed)
 
 
 
-static u32 calcHash(u32 size, const void* data)
+static u32 calc_hash(u32 size, const void* data)
 {
-    return calcHashX(size, data, upool_Seed_Hash);
+    return calc_hashX(size, data, upool_Seed_Hash);
 }
-static u32 calcHash1(u32 elmSize, const void* data)
+static u32 calc_hash1(u32 elmSize, const void* data)
 {
-    return calcHashX(elmSize, data, upool_Seed_Hash1);
+    return calc_hashX(elmSize, data, upool_Seed_Hash1);
 }
 
 
 // https://math.stackexchange.com/questions/2251823/are-all-odd-numbers-coprime-to-powers-of-two
-static u32 upoolCalcShift(upool_t pool, const void* data, u32 size)
+static u32 upool_calcShift(upool_t pool, const void* data, u32 size)
 {
-    u32 shift = calcHash1(size, data);
+    u32 shift = calc_hash1(size, data);
     shift = (shift > 0) ? shift : 1;
     shift = shift % pool->slotTable->length;
     shift += shift % 2 ? 0 : 1;
@@ -120,7 +120,7 @@ static u32 upoolCalcShift(upool_t pool, const void* data, u32 size)
 }
 
 
-static u32 upoolNextSlot(upool_t pool, u32 si, u32 shift)
+static u32 upool_nextSlot(upool_t pool, u32 si, u32 shift)
 {
     si = (si + shift) % pool->slotTable->length;
     return si;
@@ -128,7 +128,7 @@ static u32 upoolNextSlot(upool_t pool, u32 si, u32 shift)
 
 
 
-static u32 upoolAddData(upool_t pool, const void* elmData, u32 elmSize)
+static u32 upool_addData(upool_t pool, const void* elmData, u32 elmSize)
 {
     u32 offset = pool->dataBuf->length;
     vec_pusharr(pool->dataBuf, elmData, elmSize);
@@ -137,7 +137,7 @@ static u32 upoolAddData(upool_t pool, const void* elmData, u32 elmSize)
     return offset;
 }
 
-static void upoolOccupySlot(upool_t pool, u32 si, u32 hash, u32 elmSize, u32 elmOffset)
+static void upool_occupySlot(upool_t pool, u32 si, u32 hash, u32 elmSize, u32 elmOffset)
 {
     ++pool->numSlotsUsed;
     assert(si < pool->slotTable->length);
@@ -149,7 +149,7 @@ static void upoolOccupySlot(upool_t pool, u32 si, u32 hash, u32 elmSize, u32 elm
 }
 
 
-static void upoolEnlarge(upool_t pool)
+static void upool_enlarge(upool_t pool)
 {
     pool->numSlotsUsed = 0;
     u32 l0 = pool->slotTable->length;
@@ -168,9 +168,9 @@ static void upoolEnlarge(upool_t pool)
         u32 elmSize = slot->elm.size;
         u32 elmOffset = slot->elm.offset;
         const void* elmData = pool->dataBuf->data + elmOffset;
-        u32 hash = calcHash(elmSize, elmData);
+        u32 hash = calc_hash(elmSize, elmData);
 #ifdef UPOOL_DOUBLEHASHING
-        const u32 shift = upoolCalcShift(pool, elmData, elmSize);
+        const u32 shift = upool_calcShift(pool, elmData, elmSize);
 #else
         const u32 shift = 1;
 #endif
@@ -181,10 +181,10 @@ static void upoolEnlarge(upool_t pool)
             {
                 if (!pool->slotTable->data[si].occupied)
                 {
-                    upoolOccupySlot(pool, si, hash, elmSize, elmOffset);
+                    upool_occupySlot(pool, si, hash, elmSize, elmOffset);
                     break;
                 }
-                si = upoolNextSlot(pool, si, shift);
+                si = upool_nextSlot(pool, si, shift);
                 assert(si != s0);
             }
         }
@@ -198,11 +198,11 @@ static void upoolEnlarge(upool_t pool)
 
 
 
-u32 upoolFind(upool_t pool, const void* elmData, u32 elmSize)
+u32 upool_find(upool_t pool, const void* elmData, u32 elmSize)
 {
-    u32 hash = calcHash(elmSize, elmData);
+    u32 hash = calc_hash(elmSize, elmData);
 #ifdef UPOOL_DOUBLEHASHING
-    const u32 shift = upoolCalcShift(pool, elmData, elmSize);
+    const u32 shift = upool_calcShift(pool, elmData, elmSize);
 #else
     const u32 shift = 1;
 #endif
@@ -224,22 +224,22 @@ u32 upoolFind(upool_t pool, const void* elmData, u32 elmSize)
         }
         return pool->slotTable->data[si].elm.offset;
     next:
-        si = upoolNextSlot(pool, si, shift);
+        si = upool_nextSlot(pool, si, shift);
     }
 }
 
 
 
 
-u32 upoolElm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew)
+u32 upool_elm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew)
 {
     if (pool->numSlotsUsed > pool->slotTable->length*0.75f)
     {
-        upoolEnlarge(pool);
+        upool_enlarge(pool);
     }
-    u32 hash = calcHash(elmSize, elmData);
+    u32 hash = calc_hash(elmSize, elmData);
 #ifdef UPOOL_DOUBLEHASHING
-    const u32 shift = upoolCalcShift(pool, elmData, elmSize);
+    const u32 shift = upool_calcShift(pool, elmData, elmSize);
 #else
     const u32 shift = 1;
 #endif
@@ -251,8 +251,8 @@ u32 upoolElm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew)
             if (!pool->slotTable->data[si].occupied)
             {
                 if (isNew) *isNew = true;
-                u32 elmOffset = upoolAddData(pool, elmData, elmSize);
-                upoolOccupySlot(pool, si, hash, elmSize, elmOffset);
+                u32 elmOffset = upool_addData(pool, elmData, elmSize);
+                upool_occupySlot(pool, si, hash, elmSize, elmOffset);
                 return elmOffset;
             }
             if (pool->slotTable->data[si].elm.size != elmSize)
@@ -267,7 +267,7 @@ u32 upoolElm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew)
             if (isNew) *isNew = false;
             return pool->slotTable->data[si].elm.offset;
         next:
-            si = upoolNextSlot(pool, si, shift);
+            si = upool_nextSlot(pool, si, shift);
             if (si == s0)
             {
                 break;
@@ -275,7 +275,7 @@ u32 upoolElm(upool_t pool, const void* elmData, u32 elmSize, bool* isNew)
         }
     }
 enlarge:
-    upoolEnlarge(pool);
+    upool_enlarge(pool);
     {
         u32 si = hash % pool->slotTable->length;
         u32 s0 = si;
@@ -284,11 +284,11 @@ enlarge:
             if (!pool->slotTable->data[si].occupied)
             {
                 if (isNew) *isNew = true;
-                u32 elmOffset = upoolAddData(pool, elmData, elmSize);
-                upoolOccupySlot(pool, si, hash, elmSize, elmOffset);
+                u32 elmOffset = upool_addData(pool, elmData, elmSize);
+                upool_occupySlot(pool, si, hash, elmSize, elmOffset);
                 return elmOffset;
             }
-            si = upoolNextSlot(pool, si, shift);
+            si = upool_nextSlot(pool, si, shift);
             if (si == s0)
             {
                 break;
@@ -303,7 +303,7 @@ enlarge:
 
 
 
-const void* upoolElmData(upool_t pool, u32 offset)
+const void* upool_elmData(upool_t pool, u32 offset)
 {
     return pool->dataBuf->data + offset;
 }
@@ -314,14 +314,14 @@ const void* upoolElmData(upool_t pool, u32 offset)
 
 
 
-u32 upoolElmsTotal(upool_t pool)
+u32 upool_elmsTotal(upool_t pool)
 {
     return pool->numSlotsUsed;
 }
 
 
 
-void upoolForEach(upool_t pool, upool_ElmCallback cb)
+void upool_forEach(upool_t pool, upool_ElmCallback cb)
 {
     for (u32 i = 0; i < pool->slotTable->length; ++i)
     {
